@@ -7,6 +7,7 @@
   .lvl button { border: 3px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 14px; font-size: clamp(14px, 1.7vw, 18px); }
   .lvl button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .mcard .st { position: absolute; top: 8px; right: 12px; font-size: 13px; }
+  .mcard .del { position: absolute; top: 6px; left: 8px; font-size: 16px; background: #FFF0F0; border-radius: 8px; padding: 2px 5px; }
   .k { gap: 8px; }
   .khead { display: flex; align-items: center; gap: 10px; }
   .khead .ask { flex: 1; text-align: center; font-size: clamp(19px, 2.8vw, 32px); font-weight: 800; }

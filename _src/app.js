@@ -13,6 +13,10 @@
     { n: 'さんかく', e: '🔺', lv: 1, t: [[[0, 0], [4, 0], [2, 2]], [[4, 0], [4, 4], [2, 2]]] },
     { n: 'ふね', e: '⛵', lv: 1, t: [[[2, 0], [2, 2], [0, 2]], [[0, 2], [2, 2], [1, 3], [-1, 3]]] },
     { n: 'ダイヤ', e: '💎', lv: 1, t: [[[0, 1], [2, 1], [1, 2]], [[0, 1], [2, 1], [1, 0]]] },
+    { n: 'リボン', e: '🎀', lv: 1, t: [[[0, 0], [0, 4], [2, 2]], [[4, 0], [4, 4], [2, 2]]] },
+    { n: 'きのこ', e: '🍄', lv: 1, t: [[[0, 2], [4, 2], [2, 0]], [[2, 2], [3, 3], [2, 4], [1, 3]]] },
+    { n: 'きつね', e: '🦊', lv: 2, t: [[[0, 1], [4, 1], [2, 3]], [[0, 1], [2, 1], [1, 0]], [[2, 1], [4, 1], [3, 0]]] },
+    { n: 'ねこ', e: '🐈', lv: 2, t: [[[0, 4], [4, 4], [2, 2]], [[2, 0], [3, 1], [2, 2], [1, 1]], [[4, 2], [4, 4], [5, 3]]] },
     { n: 'さかな', e: '🐟', lv: 2, t: [[[0, 2], [4, 2], [2, 4]], [[0, 2], [4, 2], [2, 0]], [[5, 1], [5, 3], [4, 2]]] },
     { n: 'いえ', e: '🏠', lv: 2, t: [[[0, 2], [4, 2], [2, 0]], [[1, 2], [3, 2], [1, 4]], [[3, 2], [3, 4], [2, 3]], [[3, 4], [1, 4], [2, 3]]] },
     { n: 'き', e: '🌲', lv: 2, t: [[[0, 2], [4, 2], [2, 0]], [[0, 4], [4, 4], [2, 2]], [[1, 4], [3, 4], [2, 5]], [[2, 5], [3, 6], [2, 7], [1, 6]]] },
@@ -30,6 +34,7 @@
     defaults: { level: 1, guide: 'auto' },
     newProfile: (name, icon) => ({ id: 'p' + Math.random().toString(36).slice(2, 9), name, icon, best: {}, log: [], tan: {} }),
     normProfile(p) { p.best = p.best && typeof p.best === 'object' ? p.best : {}; p.log = Array.isArray(p.log) ? p.log : []; p.tan = p.tan && typeof p.tan === 'object' ? p.tan : {}; },
+    normStore(o) { if (!Array.isArray(o.puz)) o.puz = []; },
     childScreens: ['play'], topScreens: ['home', 'tanlist'],
     renderHome: () => renderHome(),
     profileNote: p => 'あそんだ ' + p.log.length + 'かい',
@@ -38,6 +43,7 @@
 /*BASE_HERE*/
 
   const L = () => Number(S().level) || 1;
+  const allPuz = () => PUZ.concat(store.puz);
   const rotP = (pts, r) => { let o = pts.map(p => p.slice()); for (let i = 0; i < ((r % 4) + 4) % 4; i++) o = o.map(([x, y]) => [-y, x]); return o; };
   const keyOf = pts => { const mx = Math.min(...pts.map(p => p[0])), my = Math.min(...pts.map(p => p[1])); return pts.map(p => (p[0] - mx) + ',' + (p[1] - my)).sort().join(';'); };
   const absKey = pts => pts.map(p => Math.round(p[0] * 100) / 100 + ',' + Math.round(p[1] * 100) / 100).sort().join(';');
@@ -62,8 +68,9 @@
     screen = 'tanlist';
     const p = cur();
     setView('home', [h('h1', { class: 'title' }, '🔷 タングラム', h('small', null, 'つくりたい かたちを えらぼう')),
-      h('div', { class: 'menu' }, PUZ.map((z, i) => h('button', { type: 'button', class: 'mcard', style: '--c:' + ['#40C057', '#FAB005', '#E8590C'][z.lv - 1], onclick: () => { if (tapOk()) { sfx.tap(); startTan(i); } } },
-        p.tan[i] ? h('span', { class: 'st' }, '✅') : null, E(z.e), h('b', null, z.n), h('small', null, z.t.length + 'こ の ピース')))),
+      h('div', { class: 'menu' }, h('button', { type: 'button', class: 'mcard', style: '--c:#7048E8', onclick: () => { if (tapOk()) { sfx.tap(); renderFree(); } } }, E('✨'), h('b', null, 'じゆうに つくる'), h('small', null, 'つくった かたちを もんだいに できる')),
+        allPuz().map((z, i) => h('button', { type: 'button', class: 'mcard', style: '--c:' + ['#40C057', '#FAB005', '#E8590C'][z.lv - 1], onclick: () => { if (tapOk()) { sfx.tap(); startTan(i); } } },
+        p.tan[i] ? h('span', { class: 'st' }, '✅') : null, z.mine ? h('span', { class: 'del', title: 'けす', onclick: e => { e.stopPropagation(); if (confirm('「' + z.n + '」を けしますか？')) { store.puz = store.puz.filter(x => x !== z); persist(); renderTanList(); } } }, '🗑') : null, E(z.e), h('b', null, z.n), h('small', null, (z.mine ? '✏️ つくった・' : '') + z.t.length + 'こ の ピース')))),
       h('div', { class: 'actions' }, h('button', { type: 'button', class: 'mid-btn', onclick: () => { if (tapOk()) renderHome(); } }, '◀ もどる'))]);
   }
 
@@ -95,7 +102,7 @@
      🔷 タングラム
      ============================================================ */
   let T = null;
-  function startTan(i) { T = { i, z: PUZ[i], t0: Date.now(), hints: 0 }; keepAwake(); renderTan(); }
+  function startTan(i) { T = { i, z: allPuz()[i], t0: Date.now(), hints: 0 }; keepAwake(); renderTan(); }
   function renderTan() {
     screen = 'play';
     const z = T.z, targets = z.t.map(pts => ({ pts, type: typeOf(pts), done: false }));
@@ -145,6 +152,49 @@
         h('button', { type: 'button', class: 'mid-btn', onclick: () => { if (tapOk()) renderTanList(); } }, '◀ ほかの かたち'))]);
     speak(z.n + 'を つくろう');
   }
+  // かさなりを しらべる（こまかい てんを うって、2つ いじょうの ピースに はいる てんが あるか）
+  function inPoly(x, y, pts) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+  function overlaps(polys) {
+    const xs = polys.flat().map(p => p[0]), ys = polys.flat().map(p => p[1]);
+    for (let x = Math.min(...xs) + .07; x < Math.max(...xs); x += .13) for (let y = Math.min(...ys) + .05; y < Math.max(...ys); y += .13) { let n = 0; for (const p of polys) if (inPoly(x, y, p) && ++n > 1) return true; }
+    return false;
+  }
+  function renderFree() {
+    screen = 'play';
+    const B = 10, wide = innerWidth > innerHeight * 1.05;
+    const types = ['L', 'L', 'M', 'S', 'S', 'Q', 'P'], cnt = {};
+    const pieces = types.map(t => { cnt[t] = (cnt[t] || 0) + 1; return { type: t, base: PIECES[t], r: 0, x: 0, y: 0, col: PCOL[t][(cnt[t] - 1) % PCOL[t].length] }; });
+    let cx = 0, cy = 0, rowH = 0; const tx = wide ? B + 1.5 : 0, ty = wide ? 0 : B + 1.5, trayW = wide ? 9.4 : B;
+    pieces.forEach(pc => { const pts = rotP(pc.base, 0), w = Math.max(...pts.map(p => p[0])), hh = Math.max(...pts.map(p => p[1])); if (cx + w > trayW) { cx = 0; cy += rowH + .6; rowH = 0; } pc.x = tx + cx; pc.y = ty + cy; cx += w + .6; rowH = Math.max(rowH, hh); });
+    const allW = wide ? tx + trayW : B, allH = wide ? Math.max(B, cy + rowH) : ty + cy + rowH;
+    const svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('viewBox', '-1 -1 ' + (allW + 2) + ' ' + (allH + 2));
+    let g = '<rect x="0" y="0" width="' + B + '" height="' + B + '" fill="#F8F9FA" stroke="#CED4DA" stroke-width=".05"/>';
+    for (let i = 1; i < B; i++) g += '<path d="M' + i + ' 0V' + B + 'M0 ' + i + 'H' + B + '" stroke="#E9ECEF" stroke-width=".04"/>';
+    svg.innerHTML = g;
+    const polyOf = pc => rotP(pc.base, pc.r).map(p => [p[0] + pc.x, p[1] + pc.y]);
+    const draw = (pc, el) => el.setAttribute('points', ptsStr(polyOf(pc)));
+    pieces.forEach(pc => {
+      const el = document.createElementNS(SVGNS, 'polygon'); el.setAttribute('class', 'pc'); el.setAttribute('fill', pc.col); draw(pc, el); svg.appendChild(el);
+      let ox = 0, oy = 0;
+      dragIn(svg, el, { start: () => { ox = pc.x; oy = pc.y; }, move: (dx, dy) => { pc.x = ox + dx; pc.y = oy + dy; draw(pc, el); }, drop: () => { pc.x = Math.round(pc.x); pc.y = Math.round(pc.y); draw(pc, el); tone(440, 0, .04, 'triangle', .15); },
+        tap: () => { const a = polyOf(pc), c0 = [a.reduce((s, p) => s + p[0], 0) / a.length, a.reduce((s, p) => s + p[1], 0) / a.length]; pc.r = (pc.r + 1) % 4; const b = polyOf(pc), c1 = [b.reduce((s, p) => s + p[0], 0) / b.length, b.reduce((s, p) => s + p[1], 0) / b.length]; pc.x = Math.round(pc.x + c0[0] - c1[0]); pc.y = Math.round(pc.y + c0[1] - c1[1]); draw(pc, el); tone(520, 0, .05, 'triangle', .2); } });
+    });
+    const save = () => {
+      const on = pieces.filter(pc => polyOf(pc).every(([x, y]) => x >= 0 && y >= 0 && x <= B && y <= B));
+      if (on.length < 2) { toast('ます目の なかに ピースを 2こ いじょう おいてね'); return; }
+      const polys = on.map(polyOf);
+      if (overlaps(polys)) { toast('ピースが かさなって います'); sfx.ng(); return; }
+      const name = prompt('この かたちの なまえ（れい：ロケット）', ''); if (name === null) return;
+      store.puz.push({ n: name.trim() || 'じぶんの かたち', e: '⭐', lv: on.length <= 3 ? 1 : on.length <= 5 ? 2 : 3, t: polys, mine: true });
+      persist(); sfx.clear(); FX.small(svg); toast('「' + (name.trim() || 'じぶんの かたち') + '」を もんだいに しました');
+      after(900, renderTanList);
+    };
+    setView('k', [h('div', { class: 'khead' }, h('div', { class: 'ask' }, '✨ じゆうに つくろう')), h('div', { class: 'board' }, svg),
+      h('div', { class: 'tip2' }, '👆 ゆびで うごかす・タッチで まわす。ます目の なかに つくった かたちを もんだいに できます'),
+      h('div', { class: 'tools' }, h('button', { type: 'button', class: 'mid-btn', onclick: () => { if (tapOk()) save(); } }, '📸 もんだいに する'), h('button', { type: 'button', class: 'mid-btn', onclick: () => { if (tapOk()) renderFree(); } }, '↺ はじめから'), h('button', { type: 'button', class: 'mid-btn', onclick: () => { if (tapOk()) renderTanList(); } }, '◀ もどる'))]);
+    if (TEST) T = { free: pieces, set: (k, r, x, y) => { const pc = pieces[k]; pc.r = r; pc.x = x; pc.y = y; draw(pc, svg.querySelectorAll('.pc')[k]); }, save };
+  }
   function finishTan(svg) {
     const p = cur(); p.tan[T.i] = true;
     const star = T.hints === 0 ? 3 : T.hints <= 2 ? 2 : 1, key = 'tan' + T.z.lv;
@@ -154,7 +204,7 @@
     svg.querySelectorAll('.sil').forEach(x => x.style.opacity = '0');
     after(2200, () => {
       screen = 'end';
-      const next = PUZ.findIndex((z, i) => i > T.i);
+      const next = allPuz().findIndex((z, i) => i > T.i);
       setView('center', [h('div', { class: 'center' }, h('div', { class: 'stars' }, [0, 1, 2].map(i => h('span', { class: i < star ? '' : 'off' }, '⭐'))),
         h('h1', { class: 'title' }, T.z.e + ' 「' + T.z.n + '」 できた！', h('small', null, Math.round((Date.now() - T.t0) / 1000) + 'びょう' + (T.hints ? '・ヒント ' + T.hints + 'かい' : ''))),
         h('div', { class: 'actions' }, next >= 0 ? h('button', { type: 'button', class: 'big-btn go', onclick: () => { if (tapOk()) startTan(next); } }, '▶ つぎの かたち') : null,
@@ -308,7 +358,7 @@
   function buildPages(type, o) {
     o = o || {};
     if (type === 'tan') {
-      const z = PUZ[Number(o.p) || 0], guide = o.guide === 'on';
+      const z = allPuz()[Number(o.p) || 0] || PUZ[0], guide = o.guide === 'on';
       const minx = Math.min(...z.t.flat().map(p => p[0])), miny = Math.min(...z.t.flat().map(p => p[1]));
       const T2 = z.t.map(t => t.map(p => [p[0] - minx, p[1] - miny]));
       const bw = Math.max(...T2.flat().map(p => p[0])), bh = Math.max(...T2.flat().map(p => p[1]));
@@ -338,7 +388,7 @@
     list() {
       const lv = { key: 'lv', label: 'むずかしさ', opts: [[1, 'やさしい'], [2, 'ふつう'], [3, 'むずかしい']], def: Number(S().level) || 1 }, an = { key: 'ans', label: 'こたえ', opts: [['off', 'なし'], ['on', 'あり']], def: 'off' };
       return [
-        { id: 'tan', name: 'タングラム（2まい）', icon: '🔷', params: [{ key: 'p', label: 'かたち', opts: PUZ.map((z, i) => [i, z.n]), def: 0 }, { key: 'guide', label: 'なかの せん', opts: [['on', 'あり（ヒント）'], ['off', 'なし']], def: 'on' }] },
+        { id: 'tan', name: 'タングラム（2まい）', icon: '🔷', params: [{ key: 'p', label: 'かたち', opts: allPuz().map((z, i) => [i, z.n]), def: 0 }, { key: 'guide', label: 'なかの せん', opts: [['on', 'あり（ヒント）'], ['off', 'なし']], def: 'on' }] },
         { id: 'copy', name: 'おてほん うつし', icon: '🔲', params: [lv, an] },
         { id: 'rot', name: 'まわすと どれ？', icon: '🔄', params: [lv, an] }
       ];
@@ -358,5 +408,5 @@
     add(log.length ? h('table', { class: 'rec-table' }, h('tr', null, ['日時', 'あそび', 'レベル', 'けっか', 'じかん'].map(x => h('th', null, x))),
       log.map(r => { const d = new Date(r.t), g = GAMES.find(x => x.id === r.g); return h('tr', null, h('td', null, (d.getMonth() + 1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0')), h('td', null, (g ? g.e + ' ' + g.n : r.g) + (r.name ? '「' + r.name + '」' : '')), h('td', null, String(r.lv)), h('td', null, r.g === 'tan' ? '⭐'.repeat(r.ok) : r.ok + ' / ' + r.n), h('td', null, r.sec + 'びょう')); })) : h('p', { class: 'note' }, 'まだ きろくが ありません。'));
   };
-  if (TEST) window.__kp = { store: () => store, PUZ, PIECES, typeOf, startTan, startGame, G: () => G, T: () => T, genRot, genCopy, ckey };
+  if (TEST) window.__kp = { store: () => store, allPuz, renderFree, PUZ, PIECES, typeOf, startTan, startGame, G: () => G, T: () => T, genRot, genCopy, ckey };
   startApp();
